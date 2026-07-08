@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
 
 class FabricWeaveSimulator extends StatefulWidget {
   final Color warpColor;
