@@ -1,4 +1,4 @@
-name: Deploy Chronos: Atelier to GitHub Pages
+name: "Deploy Chronos: Atelier to GitHub Pages"
 
 on:
   push:
