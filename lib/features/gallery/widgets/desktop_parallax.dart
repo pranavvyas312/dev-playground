@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'textile_aura_background.dart';
 import 'fabric_weave_simulator.dart';
+import 'atelier_timeline_controller.dart';
+import '../models/era_state.dart';
 
 class DesktopParallax extends StatefulWidget {
   const DesktopParallax({super.key});
@@ -19,26 +21,7 @@ class _DesktopParallaxState extends State<DesktopParallax> with TickerProviderSt
   Color? _selectedColor;
   bool _isShowingSimulator = false;
 
-  final List<Map<String, String>> items = [
-    {
-      'title': "L'Essence de la Haute Couture",
-      'subtitle': 'RENAISSANCE BROCADE',
-      'description': 'Every thread tells a story of centuries-old craftsmanship, reimagined through digital precision.',
-      'image': 'assets/images/renaissance_brocade.png'
-    },
-    {
-      'title': "L'Art de la Temporalité",
-      'subtitle': 'JAPANESE INDIGO SHIBORI',
-      'description': 'A dialogue between the indigo depths of Edo-period Japan and the fluid silhouettes of tomorrow.',
-      'image': 'assets/images/japanese_indigo_shibori.png'
-    },
-    {
-      'title': 'Minimalisme Radical',
-      'subtitle': 'MODERNIST MINIMALISM',
-      'description': 'Stripping away the superfluous to reveal the architectural soul of the garment.',
-      'image': 'assets/images/modernist_minimalism.png'
-    },
-  ];
+  final List<EraState> eras = EraState.eras;
 
   @override
   void initState() {
@@ -51,7 +34,7 @@ class _DesktopParallaxState extends State<DesktopParallax> with TickerProviderSt
     setState(() {
       _scrollOffset = _scrollController.offset;
       double itemWidth = MediaQuery.of(context).size.width * 0.6;
-      int newIndex = (_scrollOffset / itemWidth).round().clamp(0, items.length - 1);
+      int newIndex = (_scrollOffset / itemWidth).round().clamp(0, eras.length - 1);
       if (newIndex != _currentIndex) {
         _currentIndex = newIndex;
         _selectedColor = null;
@@ -59,10 +42,19 @@ class _DesktopParallaxState extends State<DesktopParallax> with TickerProviderSt
     });
   }
 
+  void _scrollToEra(int index) {
+    double itemWidth = MediaQuery.of(context).size.width * 0.6;
+    _scrollController.animateTo(
+      index * itemWidth,
+      duration: const Duration(milliseconds: 1200),
+      curve: Curves.easeInOutQuart,
+    );
+  }
+
   Future<void> _generatePalettes() async {
-    for (int i = 0; i < items.length; i++) {
+    for (int i = 0; i < eras.length; i++) {
       final PaletteGenerator palette = await PaletteGenerator.fromImageProvider(
-        AssetImage(items[i]['image']!),
+        AssetImage(eras[i].assetPath),
         maximumColorCount: 5,
       );
       setState(() {
@@ -83,70 +75,113 @@ class _DesktopParallaxState extends State<DesktopParallax> with TickerProviderSt
       currentAura = [_selectedColor!, currentAura[1]];
     }
 
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 800),
-      child: _isShowingSimulator
-          ? FabricWeaveSimulator(
-              warpColor: currentAura[0],
-              weftColor: currentAura[1],
-              onDismiss: () => setState(() => _isShowingSimulator = false),
-            )
-          : Row(
-              children: [
-                // Left Side: Horizontal Parallax Gallery (60% width)
-                Expanded(
-                  flex: 6,
-                  child: Container(
-                    color: const Color(0xFF0A0A0A),
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      scrollDirection: Axis.horizontal,
-                      itemCount: items.length,
-                      itemBuilder: (context, index) {
-                        return GestureDetector(
-                          onDoubleTap: () => setState(() => _isShowingSimulator = true),
-                          child: _buildParallaxItem(index),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-
-                // Right Side: Scrollable Editorial (40% width)
-                Expanded(
-                  flex: 4,
-                  child: TextileAuraBackground(
-                    colors: currentAura,
-                    child: Container(
-                      color: Colors.transparent, // Background handled by Aura
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 120),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildAnimatedText(
-                              'CHRONOS MASTER GALLERY',
-                              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                    color: const Color(0xFFD4AF37),
-                                    letterSpacing: 4,
-                                  ),
-                              delay: 0,
-                            ),
-                            const SizedBox(height: 40),
-                            ...items.asMap().entries.map((entry) {
-                              if (entry.key == _currentIndex) {
-                                return _buildEditorialSection(entry.value, entry.key);
-                              }
-                              return const SizedBox.shrink();
-                            }).toList(),
-                          ],
+    return Stack(
+      children: [
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 800),
+          child: _isShowingSimulator
+              ? FabricWeaveSimulator(
+                  warpColor: currentAura[0],
+                  weftColor: currentAura[1],
+                  onDismiss: () => setState(() => _isShowingSimulator = false),
+                )
+              : Row(
+                  children: [
+                    // Left Side: Horizontal Parallax Gallery (60% width)
+                    Expanded(
+                      flex: 6,
+                      child: Container(
+                        color: const Color(0xFF0A0A0A),
+                        child: ListView.builder(
+                          controller: _scrollController,
+                          scrollDirection: Axis.horizontal,
+                          itemCount: eras.length,
+                          itemBuilder: (context, index) {
+                            return GestureDetector(
+                              onDoubleTap: () => setState(() => _isShowingSimulator = true),
+                              child: _buildParallaxItem(index),
+                            );
+                          },
                         ),
                       ),
                     ),
-                  ),
+
+                    // Right Side: Scrollable Editorial (40% width)
+                    Expanded(
+                      flex: 4,
+                      child: TextileAuraBackground(
+                        colors: currentAura,
+                        child: Container(
+                          color: Colors.transparent, // Background handled by Aura
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 120),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildAnimatedText(
+                                  'CHRONOS MASTER GALLERY',
+                                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                        color: const Color(0xFFD4AF37),
+                                        letterSpacing: 4,
+                                      ),
+                                  delay: 0,
+                                ),
+                                const SizedBox(height: 40),
+                                AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 1200),
+                                  layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
+                                    return Stack(
+                                      alignment: Alignment.topLeft,
+                                      children: [
+                                        ...previousChildren.map((child) => _buildDisplacementWrapper(child, false)),
+                                        if (currentChild != null) _buildDisplacementWrapper(currentChild, true),
+                                      ],
+                                    );
+                                  },
+                                  child: KeyedSubtree(
+                                    key: ValueKey(_currentIndex),
+                                    child: _buildEditorialSection(eras[_currentIndex], _currentIndex),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+        ),
+        // Timeline Controller Overlay
+        Positioned(
+          bottom: 40,
+          right: 40,
+          width: MediaQuery.of(context).size.width * 0.35,
+          child: AtelierTimelineController(
+            currentIndex: _currentIndex,
+            onEraSelected: _scrollToEra,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDisplacementWrapper(Widget child, bool isEntering) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 1200),
+      curve: Curves.easeInOutCubic,
+      builder: (context, value, child) {
+        double offset = isEntering ? (1.0 - value) * 100 : value * -100;
+        return Opacity(
+          opacity: isEntering ? value : (1.0 - value),
+          child: Transform.translate(
+            offset: Offset(0, offset),
+            child: child,
+          ),
+        );
+      },
+      child: child,
     );
   }
 
@@ -166,7 +201,7 @@ class _DesktopParallaxState extends State<DesktopParallax> with TickerProviderSt
             Transform.translate(
               offset: Offset(parallaxEffect, 0),
               child: Image.asset(
-                items[index]['image']!,
+                eras[index].assetPath,
                 fit: BoxFit.cover,
               ),
             ),
@@ -188,14 +223,14 @@ class _DesktopParallaxState extends State<DesktopParallax> with TickerProviderSt
     );
   }
 
-  Widget _buildEditorialSection(Map<String, String> item, int index) {
+  Widget _buildEditorialSection(EraState era, int index) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 40),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildAnimatedText(
-            item['subtitle']!,
+            era.subtitle,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: const Color(0xFFD4AF37),
                   letterSpacing: 2,
@@ -204,16 +239,17 @@ class _DesktopParallaxState extends State<DesktopParallax> with TickerProviderSt
           ),
           const SizedBox(height: 16),
           _buildAnimatedText(
-            item['title']!,
+            era.title,
             style: Theme.of(context).textTheme.displayMedium?.copyWith(
                   fontSize: 48,
                   height: 1.1,
+                  fontFamily: era.fontFamily,
                 ),
             delay: 400,
           ),
           const SizedBox(height: 32),
           _buildAnimatedText(
-            item['description']!,
+            era.description,
             style: const TextStyle(
               color: Colors.white60,
               fontSize: 18,

@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:palette_generator/palette_generator.dart';
 import 'textile_aura_background.dart';
 import 'fabric_weave_simulator.dart';
+import 'atelier_timeline_controller.dart';
+import '../models/era_state.dart';
 
 class MobileCarousel extends StatefulWidget {
   const MobileCarousel({super.key});
@@ -18,11 +20,7 @@ class _MobileCarouselState extends State<MobileCarousel> {
   Color? _selectedColor;
   bool _isShowingSimulator = false;
 
-  final List<Map<String, String>> items = [
-    {'title': 'RENAISSANCE BROCADE', 'image': 'assets/images/renaissance_brocade.png'},
-    {'title': 'JAPANESE INDIGO SHIBORI', 'image': 'assets/images/japanese_indigo_shibori.png'},
-    {'title': 'MODERNIST MINIMALISM', 'image': 'assets/images/modernist_minimalism.png'},
-  ];
+  final List<EraState> eras = EraState.eras;
 
   @override
   void initState() {
@@ -37,9 +35,9 @@ class _MobileCarouselState extends State<MobileCarousel> {
   }
 
   Future<void> _generatePalettes() async {
-    for (int i = 0; i < items.length; i++) {
+    for (int i = 0; i < eras.length; i++) {
       final PaletteGenerator palette = await PaletteGenerator.fromImageProvider(
-        AssetImage(items[i]['image']!),
+        AssetImage(eras[i].assetPath),
         maximumColorCount: 5,
       );
       setState(() {
@@ -53,7 +51,7 @@ class _MobileCarouselState extends State<MobileCarousel> {
 
   @override
   Widget build(BuildContext context) {
-    int currentIndex = _currentPage.round().clamp(0, items.length - 1);
+    int currentIndex = _currentPage.round().clamp(0, eras.length - 1);
     List<Color> currentAura = _palettes[currentIndex] ?? [Colors.white, Colors.grey];
     if (_selectedColor != null) {
       currentAura = [_selectedColor!, currentAura[1]];
@@ -74,7 +72,7 @@ class _MobileCarouselState extends State<MobileCarousel> {
                   Expanded(
                     child: PageView.builder(
                       controller: _controller,
-                      itemCount: items.length,
+                      itemCount: eras.length,
                       itemBuilder: (context, index) {
                         double relativePosition = index - _currentPage;
                         double scale = math.max(0.8, 1 - relativePosition.abs() * 0.2);
@@ -100,7 +98,7 @@ class _MobileCarouselState extends State<MobileCarousel> {
                                   ),
                                 ],
                                 image: DecorationImage(
-                                  image: AssetImage(items[index]['image']!),
+                                  image: AssetImage(eras[index].assetPath),
                                   fit: BoxFit.cover,
                                 ),
                               ),
@@ -120,10 +118,11 @@ class _MobileCarouselState extends State<MobileCarousel> {
                                   children: [
                                     Flexible(
                                       child: Text(
-                                        items[index]['title']!,
+                                        eras[index].subtitle,
                                         style: Theme.of(context).textTheme.displaySmall?.copyWith(
                                               color: Colors.white,
                                               fontSize: 20,
+                                              fontFamily: eras[index].fontFamily,
                                             ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -138,6 +137,18 @@ class _MobileCarouselState extends State<MobileCarousel> {
                     ),
                   ),
                   _buildColorPalette(currentIndex),
+                  const SizedBox(height: 20),
+                  AtelierTimelineController(
+                    currentIndex: currentIndex,
+                    onEraSelected: (index) {
+                      _controller.animateToPage(
+                        index,
+                        duration: const Duration(milliseconds: 600),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    isDesktop: false,
+                  ),
                   const SizedBox(height: 120), // Leave space for bottom nav
                 ],
               ),
