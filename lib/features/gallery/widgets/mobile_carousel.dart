@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'package:palette_generator/palette_generator.dart';
 import 'textile_aura_background.dart';
+import 'fabric_weave_simulator.dart';
 
 class MobileCarousel extends StatefulWidget {
   const MobileCarousel({super.key});
@@ -15,6 +16,7 @@ class _MobileCarouselState extends State<MobileCarousel> {
   double _currentPage = 0;
   final Map<int, List<Color>> _palettes = {};
   Color? _selectedColor;
+  bool _isShowingSimulator = false;
 
   final List<Map<String, String>> items = [
     {'title': 'RENAISSANCE BROCADE', 'image': 'assets/images/renaissance_brocade.png'},
@@ -59,74 +61,86 @@ class _MobileCarouselState extends State<MobileCarousel> {
 
     return TextileAuraBackground(
       colors: currentAura,
-      child: Column(
-        children: [
-          Expanded(
-            child: PageView.builder(
-              controller: _controller,
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                double relativePosition = index - _currentPage;
-                double scale = math.max(0.8, 1 - relativePosition.abs() * 0.2);
-                double rotation = relativePosition * 0.2;
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 600),
+        child: _isShowingSimulator
+            ? FabricWeaveSimulator(
+                warpColor: currentAura[0],
+                weftColor: currentAura[1],
+                onDismiss: () => setState(() => _isShowingSimulator = false),
+              )
+            : Column(
+                children: [
+                  Expanded(
+                    child: PageView.builder(
+                      controller: _controller,
+                      itemCount: items.length,
+                      itemBuilder: (context, index) {
+                        double relativePosition = index - _currentPage;
+                        double scale = math.max(0.8, 1 - relativePosition.abs() * 0.2);
+                        double rotation = relativePosition * 0.2;
 
-                return Transform(
-                  transform: Matrix4.identity()
-                    ..setEntry(3, 2, 0.002)
-                    ..scale(scale)
-                    ..rotateY(rotation),
-                  alignment: Alignment.center,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 40, horizontal: 10),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.5),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                      image: DecorationImage(
-                        image: AssetImage(items[index]['image']!),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(24),
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.center,
-                          colors: [Colors.black.withOpacity(0.8), Colors.transparent],
-                        ),
-                      ),
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              items[index]['title']!,
-                              style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                                    color: Colors.white,
-                                    fontSize: 20,
+                        return Transform(
+                          transform: Matrix4.identity()
+                            ..setEntry(3, 2, 0.002)
+                            ..scale(scale)
+                            ..rotateY(rotation),
+                          alignment: Alignment.center,
+                          child: GestureDetector(
+                            onDoubleTap: () => setState(() => _isShowingSimulator = true),
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(vertical: 40, horizontal: 10),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(24),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.5),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 10),
                                   ),
-                              overflow: TextOverflow.ellipsis,
+                                ],
+                                image: DecorationImage(
+                                  image: AssetImage(items[index]['image']!),
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(24),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.bottomCenter,
+                                    end: Alignment.center,
+                                    colors: [Colors.black.withOpacity(0.8), Colors.transparent],
+                                  ),
+                                ),
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        items[index]['title']!,
+                                        style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                                              color: Colors.white,
+                                              fontSize: 20,
+                                            ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
                   ),
-                );
-              },
-            ),
-          ),
-          _buildColorPalette(currentIndex),
-          const SizedBox(height: 120), // Leave space for bottom nav
-        ],
+                  _buildColorPalette(currentIndex),
+                  const SizedBox(height: 120), // Leave space for bottom nav
+                ],
+              ),
       ),
     );
   }

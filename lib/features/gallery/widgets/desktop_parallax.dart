@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'textile_aura_background.dart';
+import 'fabric_weave_simulator.dart';
 
 class DesktopParallax extends StatefulWidget {
   const DesktopParallax({super.key});
@@ -16,6 +17,7 @@ class _DesktopParallaxState extends State<DesktopParallax> with TickerProviderSt
 
   final Map<int, List<Color>> _palettes = {};
   Color? _selectedColor;
+  bool _isShowingSimulator = false;
 
   final List<Map<String, String>> items = [
     {
@@ -81,58 +83,70 @@ class _DesktopParallaxState extends State<DesktopParallax> with TickerProviderSt
       currentAura = [_selectedColor!, currentAura[1]];
     }
 
-    return Row(
-      children: [
-        // Left Side: Horizontal Parallax Gallery (60% width)
-        Expanded(
-          flex: 6,
-          child: Container(
-            color: const Color(0xFF0A0A0A),
-            child: ListView.builder(
-              controller: _scrollController,
-              scrollDirection: Axis.horizontal,
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                return _buildParallaxItem(index);
-              },
-            ),
-          ),
-        ),
-
-        // Right Side: Scrollable Editorial (40% width)
-        Expanded(
-          flex: 4,
-          child: TextileAuraBackground(
-            colors: currentAura,
-            child: Container(
-              color: Colors.transparent, // Background handled by Aura
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 120),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildAnimatedText(
-                      'CHRONOS MASTER GALLERY',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: const Color(0xFFD4AF37),
-                            letterSpacing: 4,
-                          ),
-                      delay: 0,
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 800),
+      child: _isShowingSimulator
+          ? FabricWeaveSimulator(
+              warpColor: currentAura[0],
+              weftColor: currentAura[1],
+              onDismiss: () => setState(() => _isShowingSimulator = false),
+            )
+          : Row(
+              children: [
+                // Left Side: Horizontal Parallax Gallery (60% width)
+                Expanded(
+                  flex: 6,
+                  child: Container(
+                    color: const Color(0xFF0A0A0A),
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      scrollDirection: Axis.horizontal,
+                      itemCount: items.length,
+                      itemBuilder: (context, index) {
+                        return GestureDetector(
+                          onDoubleTap: () => setState(() => _isShowingSimulator = true),
+                          child: _buildParallaxItem(index),
+                        );
+                      },
                     ),
-                    const SizedBox(height: 40),
-                    ...items.asMap().entries.map((entry) {
-                      if (entry.key == _currentIndex) {
-                         return _buildEditorialSection(entry.value, entry.key);
-                      }
-                      return const SizedBox.shrink();
-                    }).toList(),
-                  ],
+                  ),
                 ),
-              ),
+
+                // Right Side: Scrollable Editorial (40% width)
+                Expanded(
+                  flex: 4,
+                  child: TextileAuraBackground(
+                    colors: currentAura,
+                    child: Container(
+                      color: Colors.transparent, // Background handled by Aura
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 120),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildAnimatedText(
+                              'CHRONOS MASTER GALLERY',
+                              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                    color: const Color(0xFFD4AF37),
+                                    letterSpacing: 4,
+                                  ),
+                              delay: 0,
+                            ),
+                            const SizedBox(height: 40),
+                            ...items.asMap().entries.map((entry) {
+                              if (entry.key == _currentIndex) {
+                                return _buildEditorialSection(entry.value, entry.key);
+                              }
+                              return const SizedBox.shrink();
+                            }).toList(),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ),
-      ],
     );
   }
 
